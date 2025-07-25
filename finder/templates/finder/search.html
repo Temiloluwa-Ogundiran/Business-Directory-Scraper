@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Search</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Search for Local Businesses</h1>
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+        {% if results %}
+        <form method="post" action="{% url 'download_json' %}" class="mt-4">
+            {% csrf_token %}
+            <input type="hidden" name="query" value="{{ form.query.value }}">
+            <input type="hidden" name="location" value="{{ form.location.value }}">
+            <input type="hidden" name="business_type" value="{{ form.business_type.value }}">
+            <button type="submit" class="btn btn-secondary">Download JSON Data</button>
+        </form>
+        {% endif %}
+        <div class="mt-5">
+            {% if results %}
+                <h2>Results:</h2>
+                <ul class="list-group">
+                    {% for place in results %}
+                        <li class="list-group-item">
+                            <strong>{{ place.name }}</strong><br>
+                            {{ place.formatted_address }}
+                            <div id="map-{{ forloop.counter }}" style="height: 300px;"></div>
+                            <script>
+                                var locations = [
+                                    {lat: {{ place.geometry.location.lat }}, lng: {{ place.geometry.location.lng }}}
+                                ];
+                                var mapCounter = {{ forloop.counter }};
+                            </script>
+                        </li>
+                    {% endfor %}
+                </ul>
+                
+            {% endif %}
+        </div>
+    </div>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-NlmzAUfszuzvV8VIwVWNsmqJOma87wU&callback=initMaps"></script>
+    <script>
+        function initMaps() {
+            {% for place in results %}
+                var location = {lat: {{ place.geometry.location.lat }}, lng: {{ place.geometry.location.lng }}};
+                var map = new google.maps.Map(document.getElementById('map-{{ forloop.counter }}'), {
+                    zoom: 15,
+                    center: location
+                });
+                var marker = new google.maps.Marker({
+                    position: location,
+                    map: map
+                });
+            {% endfor %}
+        }
+    </script>
+</body>
+</html>

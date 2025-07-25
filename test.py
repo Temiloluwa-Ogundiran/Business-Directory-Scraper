@@ -1,6 +1,6 @@
 import requests
 
-API_KEY = "AIzaSyB-NlmzAUfszuzvV8VIwVWNsmqJOma87wU"
+API_KEY = ""
 BASE_URL = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
 
 # Example: Searching for restaurants near Lagos, Nigeria

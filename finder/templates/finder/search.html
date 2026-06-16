@@ -3,63 +3,598 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Business Search</title>
+    <title>Lead Finder</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        :root {
+            --shell: #a9b8c8;
+            --surface: #ffffff;
+            --subtle: #f6f8fb;
+            --line: #e5eaf0;
+            --line-strong: #d6dee8;
+            --text: #111827;
+            --muted: #6b7888;
+            --blue: #2563eb;
+            --blue-soft: #eaf1ff;
+            --green: #2f9e44;
+            --green-soft: #eaf7ee;
+            --amber: #b7791f;
+            --amber-soft: #fff4dc;
+            --red: #c2413b;
+            --red-soft: #fff0ee;
+            --radius: 6px;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--shell);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-size: 14px;
+        }
+
+        input, select, textarea, button { font: inherit; }
+        a { color: inherit; }
+        a:hover { text-decoration: none; color: inherit; }
+
+        .app-frame {
+            width: min(1440px, calc(100vw - 56px));
+            min-height: calc(100vh - 88px);
+            margin: 44px auto;
+            display: block;
+            background: var(--surface);
+            border: 1px solid rgba(31, 41, 55, .08);
+            box-shadow: 0 18px 48px rgba(15, 23, 42, .12);
+        }
+
+        .main {
+            min-width: 0;
+            background: #fbfcfe;
+        }
+
+        .content {
+            padding: 26px 24px;
+        }
+
+        .page-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.2;
+            letter-spacing: 0;
+        }
+
+        .muted { color: var(--muted); }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+
+        .toolbar-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control, .btn-control {
+            min-height: 34px;
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius);
+            background: var(--surface);
+            color: #2b3442;
+            padding: 7px 12px;
+        }
+
+        .control {
+            width: 100%;
+        }
+
+        .btn-control {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            font-weight: 600;
+        }
+
+        .btn-control.primary {
+            background: var(--blue);
+            border-color: var(--blue);
+            color: white;
+        }
+
+        .btn-control.secondary {
+            background: var(--subtle);
+        }
+
+        .campaign-panel {
+            display: grid;
+            grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr);
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .plain-panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+        }
+
+        .panel-body {
+            padding: 16px;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            font-weight: 800;
+            margin: 0 0 12px;
+            color: #263242;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr 1fr;
+            gap: 12px;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #52616f;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .field.wide { grid-column: span 2; }
+
+        .check-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 14px;
+            margin-top: 14px;
+        }
+
+        .check-row label {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            color: #334155;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .history-list {
+            max-height: 208px;
+            overflow: auto;
+        }
+
+        .history-item {
+            display: block;
+            padding: 11px 0;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .history-item:last-child { border-bottom: 0; }
+        .history-item strong { display: block; font-size: 13px; }
+
+        .meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            height: 22px;
+            padding: 0 8px;
+            border-radius: 999px;
+            border: 1px solid #bdd2f7;
+            background: var(--blue-soft);
+            color: #174dbb;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .chip.green {
+            border-color: #b7dfc0;
+            background: var(--green-soft);
+            color: var(--green);
+        }
+
+        .chip.amber {
+            border-color: #f1d08d;
+            background: var(--amber-soft);
+            color: var(--amber);
+        }
+
+        .chip.red {
+            border-color: #fac6c2;
+            background: var(--red-soft);
+            color: var(--red);
+        }
+
+        .table-panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .table-scroll { overflow-x: auto; }
+
+        .lead-table {
+            width: 100%;
+            min-width: 1280px;
+            border-collapse: collapse;
+        }
+
+        .lead-table th,
+        .lead-table td {
+            border-bottom: 1px solid var(--line);
+            padding: 13px 14px;
+            vertical-align: middle;
+            background: var(--surface);
+        }
+
+        .lead-table th {
+            height: 44px;
+            color: #52616f;
+            font-size: 12px;
+            font-weight: 700;
+            text-align: left;
+            background: #fff;
+        }
+
+        .lead-table tr:hover td { background: #fbfdff; }
+        .lead-table tr:last-child td { border-bottom: 0; }
+
+        .select-cell { width: 42px; }
+
+        .business-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .business-name {
+            font-weight: 700;
+            max-width: 270px;
+        }
+
+        .address {
+            max-width: 310px;
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 2px;
+        }
+
+        .score-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--blue-soft);
+            color: #174dbb;
+            font-weight: 800;
+        }
+
+        .contact-line,
+        .website-line {
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .table-footer {
+            min-height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 0 14px;
+            border-top: 1px solid var(--line);
+            color: #52616f;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(248, 250, 252, .82);
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-overlay.is-visible {
+            display: flex;
+        }
+
+        .loading-box {
+            min-width: 260px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--surface);
+            padding: 20px 22px;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, .14);
+            text-align: center;
+        }
+
+        .spinner {
+            width: 26px;
+            height: 26px;
+            margin: 0 auto 12px;
+            border: 3px solid var(--blue-soft);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .alert {
+            border-radius: var(--radius);
+            border-width: 1px;
+        }
+
+        .errorlist {
+            margin: 0 0 12px;
+            padding: 10px 12px;
+            list-style: none;
+            border: 1px solid #fac6c2;
+            background: var(--red-soft);
+            color: var(--red);
+            border-radius: var(--radius);
+        }
+
+        @media (max-width: 1040px) {
+            .app-frame {
+                width: 100%;
+                min-height: 100vh;
+                margin: 0;
+            }
+
+            .campaign-panel { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .field.wide { grid-column: span 1; }
+            .toolbar { align-items: stretch; flex-direction: column; }
+            .toolbar-group { width: 100%; }
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="mt-5">Search for Local Businesses</h1>
-        <form method="post" class="mt-4">
-            {% csrf_token %}
-            {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Search</button>
-        </form>
-        {% if results %}
-        <form method="post" action="{% url 'download_json' %}" class="mt-4">
-            {% csrf_token %}
-            <input type="hidden" name="query" value="{{ form.query.value }}">
-            <input type="hidden" name="location" value="{{ form.location.value }}">
-            <input type="hidden" name="business_type" value="{{ form.business_type.value }}">
-            <button type="submit" class="btn btn-secondary">Download JSON Data</button>
-        </form>
-        {% endif %}
-        <div class="mt-5">
-            {% if results %}
-                <h2>Results:</h2>
-                <ul class="list-group">
-                    {% for place in results %}
-                        <li class="list-group-item">
-                            <strong>{{ place.name }}</strong><br>
-                            {{ place.formatted_address }}
-                            <div id="map-{{ forloop.counter }}" style="height: 300px;"></div>
-                            <script>
-                                var locations = [
-                                    {lat: {{ place.geometry.location.lat }}, lng: {{ place.geometry.location.lng }}}
-                                ];
-                                var mapCounter = {{ forloop.counter }};
-                            </script>
-                        </li>
+    <div class="app-frame">
+        <main class="main">
+            <section class="content">
+                <div class="page-head">
+                    <div>
+                        <h1>Leads</h1>
+                        {% if campaign %}
+                            <div class="muted">{{ campaign.location|default:"No location override" }} - {{ campaign.total_found }} saved leads - {{ campaign.status }}</div>
+                        {% else %}
+                            <div class="muted">Find, enrich, qualify and export business leads.</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
                     {% endfor %}
-                </ul>
-                
-            {% endif %}
+                {% endif %}
+
+                {% if not campaign %}
+                    <section class="campaign-panel">
+                        <div class="plain-panel">
+                            <div class="panel-body">
+                                <p class="panel-title">Search campaign</p>
+                                <form method="post" data-loading-message="Fetching leads...">
+                                    {% csrf_token %}
+                                    {{ form.non_field_errors }}
+                                    <div class="form-grid">
+                                        <div class="field wide">
+                                            <label for="{{ form.query.id_for_label }}">{{ form.query.label }}</label>
+                                            {{ form.query }}
+                                        </div>
+                                        <div class="field">
+                                            <label for="{{ form.location.id_for_label }}">{{ form.location.label }}</label>
+                                            {{ form.location }}
+                                        </div>
+                                        <div class="field">
+                                            <label for="{{ form.business_type.id_for_label }}">{{ form.business_type.label }}</label>
+                                            {{ form.business_type }}
+                                        </div>
+                                        <div class="field">
+                                            <label for="{{ form.google_pages.id_for_label }}">{{ form.google_pages.label }}</label>
+                                            {{ form.google_pages }}
+                                        </div>
+                                        <div class="field">
+                                            <label for="{{ form.llm_variants.id_for_label }}">{{ form.llm_variants.label }}</label>
+                                            {{ form.llm_variants }}
+                                        </div>
+                                    </div>
+                                    <div class="check-row">
+                                        <button type="submit" class="btn-control primary ml-sm-auto">Run Search</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="plain-panel">
+                            <div class="panel-body">
+                                <p class="panel-title">Recent campaigns</p>
+                                <div class="history-list">
+                                    {% for item in campaigns %}
+                                        <a class="history-item" href="{% url 'campaign_detail' item.id %}">
+                                            <strong>{{ item.query }}</strong>
+                                            <span class="muted">{{ item.location|default:"No location override" }} - {{ item.total_found }} leads</span>
+                                        </a>
+                                    {% empty %}
+                                        <span class="muted">No searches yet.</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if campaign %}
+                    <form id="filter-form" class="toolbar" method="get">
+                        <div class="toolbar-group">
+                            <input class="control" style="width: 250px;" name="q" value="{{ filter_form.q.value|default:'' }}" placeholder="Search current campaign">
+                            <button class="btn-control secondary" type="submit">Filter</button>
+                            <label class="btn-control secondary">{{ filter_form.missing_website }} No website</label>
+                            <label class="btn-control secondary">{{ filter_form.has_phone }} Has phone</label>
+                            <label class="btn-control secondary">{{ filter_form.has_email }} Has email</label>
+                            <label class="btn-control secondary">{{ filter_form.duplicates }} Duplicates</label>
+                        </div>
+                    </form>
+
+                    {% if campaign.search_plan.query_variants %}
+                        <div class="toolbar">
+                            <div class="toolbar-group">
+                                <span class="muted">Search plan:</span>
+                                {% for variant in campaign.search_plan.query_variants %}
+                                    <span class="chip">{{ variant.query }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if has_more_results %}
+                        <form method="post" action="{% url 'load_next_results' campaign.id %}" data-loading-message="Fetching next results...">
+                            {% csrf_token %}
+                            <div class="toolbar">
+                                <div class="toolbar-group">
+                                    <button class="btn-control primary" type="submit">Next results</button>
+                                    <span class="muted">Fetched {{ fetched_variant_count }} of {{ total_variant_count }} planned searches.</span>
+                                </div>
+                            </div>
+                        </form>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="toolbar">
+                            <div class="toolbar-group">
+                                <button class="btn-control secondary" formaction="{% url 'export_leads' campaign.id 'csv' %}" type="submit">Export CSV</button>
+                                <button class="btn-control secondary" formaction="{% url 'export_leads' campaign.id 'xlsx' %}" type="submit">Export XLSX</button>
+                                <button class="btn-control secondary" formaction="{% url 'export_leads' campaign.id 'json' %}" type="submit">Export JSON</button>
+                            </div>
+                        </div>
+
+                        <div class="table-panel">
+                            <div class="table-scroll">
+                                <table class="lead-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="select-cell"><input id="select-all" type="checkbox"></th>
+                                            <th>Lead</th>
+                                            <th>Category</th>
+                                            <th>Contact</th>
+                                            <th>Website</th>
+                                            <th>Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for lead in leads %}
+                                            <tr>
+                                                <td class="select-cell"><input class="lead-select" type="checkbox" name="selected_leads" value="{{ lead.id }}"></td>
+                                                <td>
+                                                    <div class="business-cell">
+                                                        <span class="score-badge">{{ lead.lead_score }}</span>
+                                                        <div>
+                                                            <div class="business-name">{{ lead.name }}</div>
+                                                            <div class="address">{{ lead.address|default:"No address" }}</div>
+                                                            {% if lead.map_url %}<a class="muted" href="{{ lead.map_url }}" target="_blank" rel="noopener">Open map</a>{% endif %}
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td>{{ lead.category|default:"Uncategorized" }}</td>
+                                                <td>
+                                                    <div class="contact-line">{{ lead.phone|default:"No phone" }}</div>
+                                                    <div class="contact-line muted">{{ lead.email|default:"No email" }}</div>
+                                                </td>
+                                                <td>
+                                                    {% if lead.website %}
+                                                        <a class="website-line" href="{{ lead.website }}" target="_blank" rel="noopener">{{ lead.website }}</a>
+                                                    {% else %}
+                                                        <span class="muted">No website</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ lead.rating|default:"-" }} <span class="muted">({{ lead.review_count }})</span></td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr><td colspan="6" class="muted">No leads match this view.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="table-footer">
+                                <span>Showing {{ leads|length }} of {{ campaign.total_found }} saved leads</span>
+                                <span>Select rows before exporting to export only those leads.</span>
+                            </div>
+                        </div>
+                    </form>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+
+    <div class="loading-overlay" id="loading-overlay" aria-live="polite" aria-hidden="true">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <strong id="loading-message">Fetching leads...</strong>
+            <div class="muted mt-1">This should only take a few seconds.</div>
         </div>
     </div>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-NlmzAUfszuzvV8VIwVWNsmqJOma87wU&callback=initMaps"></script>
+
     <script>
-        function initMaps() {
-            {% for place in results %}
-                var location = {lat: {{ place.geometry.location.lat }}, lng: {{ place.geometry.location.lng }}};
-                var map = new google.maps.Map(document.getElementById('map-{{ forloop.counter }}'), {
-                    zoom: 15,
-                    center: location
+        document.querySelectorAll("input, select").forEach(function (field) {
+            if (field.type !== "checkbox" && field.type !== "file") field.classList.add("control");
+        });
+
+        var selectAll = document.getElementById("select-all");
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                document.querySelectorAll(".lead-select").forEach(function (field) {
+                    field.checked = selectAll.checked;
                 });
-                var marker = new google.maps.Marker({
-                    position: location,
-                    map: map
-                });
-            {% endfor %}
+            });
         }
+
+        var loadingOverlay = document.getElementById("loading-overlay");
+        var loadingMessage = document.getElementById("loading-message");
+        document.querySelectorAll("form[data-loading-message]").forEach(function (form) {
+            form.addEventListener("submit", function () {
+                loadingMessage.textContent = form.getAttribute("data-loading-message") || "Loading...";
+                loadingOverlay.classList.add("is-visible");
+                loadingOverlay.setAttribute("aria-hidden", "false");
+            });
+        });
     </script>
 </body>
 </html>

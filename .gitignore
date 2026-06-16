@@ -1,1 +1,6 @@
 .qodo
+.env
+staticfiles/
+__pycache__/
+*.py[cod]
+db.sqlite3

@@ -506,6 +506,7 @@
                                 <button class="btn-control secondary" formaction="{% url 'export_leads' campaign.id 'csv' %}" type="submit">Export CSV</button>
                                 <button class="btn-control secondary" formaction="{% url 'export_leads' campaign.id 'xlsx' %}" type="submit">Export XLSX</button>
                                 <button class="btn-control secondary" formaction="{% url 'export_leads' campaign.id 'json' %}" type="submit">Export JSON</button>
+                                <button class="btn-control secondary" formaction="{% url 'enrich_campaign_contacts' campaign.id %}" data-loading-submit="Getting contact details..." type="submit">Get contacts</button>
                             </div>
                         </div>
 
@@ -594,6 +595,14 @@
         document.querySelectorAll("form[data-loading-message]").forEach(function (form) {
             form.addEventListener("submit", function () {
                 loadingMessage.textContent = form.getAttribute("data-loading-message") || "Loading...";
+                loadingOverlay.classList.add("is-visible");
+                loadingOverlay.setAttribute("aria-hidden", "false");
+            });
+        });
+
+        document.querySelectorAll("[data-loading-submit]").forEach(function (button) {
+            button.addEventListener("click", function () {
+                loadingMessage.textContent = button.getAttribute("data-loading-submit") || "Loading...";
                 loadingOverlay.classList.add("is-visible");
                 loadingOverlay.setAttribute("aria-hidden", "false");
             });

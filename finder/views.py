@@ -12,10 +12,12 @@ from .models import ExportRecord, Lead, SearchCampaign
 from .services import (
     build_dedupe_key,
     build_search_phrase,
+    enrich_google_place_details_bulk,
     google_places_search,
     leads_to_rows,
     normalize_filename,
     plan_search_queries_with_llm,
+    ProviderResult,
     rows_to_csv,
     rows_to_json,
     rows_to_xlsx,
@@ -159,6 +161,31 @@ def load_next_results(request, campaign_id):
     return redirect("campaign_detail", campaign_id=campaign.id)
 
 
+def enrich_campaign_contacts(request, campaign_id):
+    campaign = get_object_or_404(SearchCampaign, id=campaign_id)
+    if request.method != "POST":
+        return redirect("campaign_detail", campaign_id=campaign.id)
+
+    leads = list(
+        campaign.leads.filter(source="google_places")
+        .filter(Q(phone="") | Q(website=""))
+        .exclude(source_id="")
+    )
+    provider_results = [
+        _lead_to_provider_result(lead)
+        for lead in leads
+    ]
+
+    try:
+        enrich_google_place_details_bulk(provider_results)
+        updated_count = _save_enriched_contacts(leads, provider_results)
+        messages.success(request, f"Updated contact details for {updated_count} leads.")
+    except Exception as exc:
+        messages.error(request, str(exc))
+
+    return redirect("campaign_detail", campaign_id=campaign.id)
+
+
 def _run_campaign(data):
     sources = ["google_places"]
 
@@ -278,4 +305,50 @@ def _run_google_variants(variants, data):
         ]
         for future in as_completed(futures):
             results.extend(future.result())
-    return results
+    return enrich_google_place_details_bulk(results)
+
+
+def _lead_to_provider_result(lead):
+    return ProviderResult(
+        source=lead.source,
+        source_id=lead.source_id,
+        name=lead.name,
+        address=lead.address,
+        phone=lead.phone,
+        website=lead.website,
+        email=lead.email,
+        category=lead.category,
+        rating=lead.rating,
+        review_count=lead.review_count,
+        latitude=lead.latitude,
+        longitude=lead.longitude,
+        map_url=lead.map_url,
+        raw_data=lead.raw_data or {},
+    )
+
+
+def _save_enriched_contacts(leads, provider_results):
+    updated_count = 0
+    by_id = {result.source_id: result for result in provider_results}
+    for lead in leads:
+        result = by_id.get(lead.source_id)
+        if not result:
+            continue
+        update_fields = []
+        if result.phone and result.phone != lead.phone:
+            lead.phone = result.phone
+            update_fields.append("phone")
+        if result.website and result.website != lead.website:
+            lead.website = result.website
+            update_fields.append("website")
+        if result.map_url and result.map_url != lead.map_url:
+            lead.map_url = result.map_url
+            update_fields.append("map_url")
+        if result.raw_data and result.raw_data != lead.raw_data:
+            lead.raw_data = result.raw_data
+            update_fields.append("raw_data")
+        if update_fields:
+            update_fields.append("updated_at")
+            lead.save(update_fields=update_fields)
+            updated_count += 1
+    return updated_count

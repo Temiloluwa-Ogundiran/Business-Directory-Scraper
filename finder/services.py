@@ -3,6 +3,7 @@ import io
 import json
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
@@ -39,11 +40,11 @@ class ProviderResult:
     raw_data: dict | None = None
 
 
-def request_json(url, *, params=None, headers=None, retries=3, delay=1.2):
+def request_json(url, *, params=None, headers=None, retries=3, delay=1.2, timeout=REQUEST_TIMEOUT):
     last_error = None
     for attempt in range(retries):
         try:
-            response = requests.get(url, params=params, headers=headers, timeout=REQUEST_TIMEOUT)
+            response = requests.get(url, params=params, headers=headers, timeout=timeout)
             response.raise_for_status()
             return response.json()
         except (requests.RequestException, ValueError) as exc:
@@ -233,6 +234,85 @@ def google_places_search(query, location="", business_type="", pages=1):
             break
 
     return [result for result in results if result.name]
+
+
+def enrich_google_place_details_bulk(results):
+    if not getattr(settings, "GOOGLE_PLACE_DETAILS_ENABLED", True):
+        return results
+
+    api_key = getattr(settings, "GOOGLE_API_KEY", "") or getattr(settings, "GOOGLE_MAPS_API_KEY", "")
+    if not api_key:
+        return results
+
+    google_results = [
+        result
+        for result in results
+        if result.source == "google_places" and result.source_id and not (result.phone and result.website)
+    ]
+    unique_place_ids = list(dict.fromkeys(result.source_id for result in google_results))
+    if not unique_place_ids:
+        return results
+
+    max_workers = max(1, min(len(unique_place_ids), getattr(settings, "GOOGLE_DETAILS_WORKERS", 12)))
+    details_by_id = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(_google_place_details, place_id, api_key): place_id
+            for place_id in unique_place_ids
+        }
+        for future in as_completed(futures):
+            place_id = futures[future]
+            try:
+                details_by_id[place_id] = future.result()
+            except RuntimeError as exc:
+                details_by_id[place_id] = {"_details_error": str(exc)}
+
+    for result in google_results:
+        details = details_by_id.get(result.source_id) or {}
+        if details.get("_details_error"):
+            result.raw_data = {**(result.raw_data or {}), "details_error": details["_details_error"]}
+            continue
+        result.phone = (
+            result.phone
+            or details.get("international_phone_number")
+            or details.get("formatted_phone_number")
+            or ""
+        )
+        result.website = result.website or details.get("website") or ""
+        result.address = result.address or details.get("formatted_address") or ""
+        result.map_url = result.map_url or details.get("url") or ""
+        result.raw_data = {**(result.raw_data or {}), "details": details}
+
+    return results
+
+
+def _google_place_details(place_id, api_key):
+    payload = request_json(
+        "https://maps.googleapis.com/maps/api/place/details/json",
+        params={
+            "place_id": place_id,
+            "fields": ",".join(
+                [
+                    "formatted_phone_number",
+                    "international_phone_number",
+                    "website",
+                    "url",
+                    "formatted_address",
+                    "business_status",
+                ]
+            ),
+            "key": api_key,
+        },
+        retries=1,
+        delay=0.2,
+        timeout=getattr(settings, "GOOGLE_DETAILS_TIMEOUT", 8),
+    )
+    status = payload.get("status")
+    if status == "OK":
+        return payload.get("result", {})
+    if status in {"ZERO_RESULTS", "NOT_FOUND"}:
+        return {}
+    raise RuntimeError(payload.get("error_message") or f"Google Place Details returned {status}")
 
 
 def _google_text_search(params, uses_page_token=False):

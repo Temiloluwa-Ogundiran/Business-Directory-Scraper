@@ -398,6 +398,9 @@
                             <div class="muted">Find, enrich, qualify and export business leads.</div>
                         {% endif %}
                     </div>
+                    {% if campaign %}
+                        <a class="btn-control secondary" href="{% url 'search_business' %}">Back to search</a>
+                    {% endif %}
                 </div>
 
                 {% if messages %}
